@@ -1,0 +1,11 @@
+1. Summarize the district concepts and topics discussed in this conversation as a collection of objects in a json file in the following format
+
+[{
+ "Type": <concept | constraint | goal | preference | observation | reference>
+ "Summary": <under 20 word description>
+ "Content": <the content itself>
+}...
+]
+
+2. instruct the user to drag n' drop the text back into the gab n' go window
+to export the conversation

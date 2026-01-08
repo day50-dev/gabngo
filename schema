@@ -1,0 +1,6 @@
+type := constraint | goal | preference
+description := < 50 tokens
+short := < 250
+medium := < 1000
+long := < 2500
+
