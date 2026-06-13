@@ -1,8 +1,8 @@
 # Gab n' Go
 
-Treat the LLM context window as a filesystem. Concepts (constraints, goals, preferences, observations, references) are files that can be moved in and out of context, stored, queried, and retrieved.
+Treat the LLM context window like a filesystem. Concepts (constraints, goals, preferences, observations, references) are files you `push` into context and `pull` back out.
 
-Long-term goal: mount the context window as a FUSE filesystem and interact with it directly — putting in and removing memories as concept chunks.
+The context is just JSON — [llcat](llcat/) conversation files. Gab n' Go is the curated store; `push` injects concepts as system messages into those files, `pull` scans them and imports what it finds. No FUSE, no magic — just `cp`-style sync on JSON.
 
 ## Concept Schema
 
@@ -54,7 +54,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-### CLI — browse concepts like `ls`
+### CLI — browse, push, pull
 
 ```bash
 # List all concepts
@@ -63,14 +63,17 @@ python concept.py
 # Filter by type
 python concept.py concepts.json --type constraint
 
-# Filter by description
-python concept.py concepts.json --description "programming languages"
-
 # Print as an LLM prompt (inject into context window)
 python concept.py concepts.json --type preference --format llm
 
-# Select detail level
-python concept.py concepts.json --scope medium
+# Push concepts into an llcat conversation JSON (as system message)
+python concept.py push conversation.json
+
+# Push with a specific detail level
+python concept.py push conversation.json --scope medium
+
+# Pull concepts from an llcat conversation JSON into the store
+python concept.py pull conversation.json
 ```
 
 ### Web Interface — browse, drag-and-drop, import/export
@@ -103,8 +106,8 @@ Use `instruct.txt` to prompt an LLM to summarize conversation topics as concept 
 - [x] Concept CRUD CLI + MCP tool
 - [x] ChromaDB vector storage
 - [x] Basic web interface for browsing and drag-and-drop concept management
-- [ ] FUSE filesystem mount for the context window
-- [ ] Bidirectional sync — context ↔ filesystem
+- [x] Push/pull sync — `push` concepts into llcat conversation JSON, `pull` them back
+- [ ] Web interface push/pull — push/pull from the browser
 
 ## Configuration
 
