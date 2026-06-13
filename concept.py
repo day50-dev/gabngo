@@ -15,7 +15,7 @@ class Concept(list):
         super().__init__()
         self.is_loaded = False
         self.db_all = None
-        self.collection = client.create_collection("concepts")
+        self.collection = client.get_or_create_collection("concepts")
 
     def __str__(self):
         return "\n".join(super().__iter__())
@@ -23,7 +23,7 @@ class Concept(list):
     def load(self, path = 'concepts.json'):
         with open(path, 'r') as f:
             self.db_all = json.load(f)
-            self.collection.add(
+            self.collection.upsert(
                 documents=[json.dumps(m) for m in self.db_all],
                 ids=[str(x) for x in range(0, len(self.db_all))]
             )
