@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gab n' Go</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+  header {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header h1 span { color: #e94560; }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-primary { background: #e94560; color: #fff; }
+  .btn-primary:hover { background: #d63851; }
+  .btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.3); }
+  .btn-outline:hover { border-color: #fff; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-danger { background: #dc3545; color: #fff; }
+  .btn-danger:hover { background: #c82333; }
+
+  .main { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+  /* Import panel */
+  .import-panel {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .import-panel textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px;
+    resize: vertical;
+    margin-bottom: 12px;
+  }
+  .import-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .import-actions label.btn { display: inline-block; }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 5px 12px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .filter-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+  .filter-btn:hover:not(.active) { border-color: #999; }
+  .concept-count { font-size: 13px; color: #666; }
+
+  /* Concept list */
+  .concept-list { display: flex; flex-direction: column; gap: 8px; }
+  .concept-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    cursor: grab;
+    transition: box-shadow .15s, opacity .15s;
+    position: relative;
+  }
+  .concept-card:active { cursor: grabbing; }
+  .concept-card.dragging { opacity: .5; }
+  .concept-card.drag-over { box-shadow: 0 0 0 2px #e94560; }
+  .concept-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .concept-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .type-constraint { background: #fff3cd; color: #856404; }
+  .type-goal { background: #d4edda; color: #155724; }
+  .type-preference { background: #d1ecf1; color: #0c5460; }
+  .type-observation { background: #e2e3f5; color: #383d41; }
+  .type-reference { background: #f8d7da; color: #721c24; }
+  .concept-description {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    flex: 1;
+  }
+  .concept-drag-handle {
+    cursor: grab;
+    color: #bbb;
+    font-size: 16px;
+    user-select: none;
+    padding: 0 4px;
+  }
+  .concept-card-body {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .concept-card-body.expanded { -webkit-line-clamp: unset; }
+  .concept-card-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .concept-card:hover .concept-card-actions { opacity: 1; }
+
+  /* Export output */
+  .export-panel {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .export-panel h3 { font-size: 14px; margin-bottom: 8px; color: #333; }
+  .export-panel pre {
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    overflow-x: auto;
+    max-height: 300px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+  }
+  .empty-state h2 { font-size: 24px; margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1a1a2e;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 600px) {
+    .main { padding: 12px; }
+    header { padding: 12px 16px; }
+    header h1 { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>gab<span>·</span>n<span>·</span>go</h1>
+  <div class="header-actions">
+    <button class="btn btn-primary" onclick="exportJSON()">Export</button>
+    <button class="btn btn-outline" onclick="clearAll()">Clear</button>
+  </div>
+</header>
+
+<div class="main">
+  <!-- Import Panel -->
+  <div class="import-panel">
+    <textarea id="jsonInput" placeholder="Paste concept JSON array here..."></textarea>
+    <div class="import-actions">
+      <button class="btn btn-primary" onclick="importJSON()">Import</button>
+      <label class="btn btn-outline" style="color:#333;border-color:#ddd;cursor:pointer">
+        Browse File
+        <input type="file" accept=".json" style="display:none" onchange="loadFile(event)">
+      </label>
+      <button class="btn btn-outline" style="color:#333;border-color:#ddd" onclick="loadSample()">Load Sample</button>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar" style="display:none">
+    <div class="filter-group" id="filterGroup"></div>
+    <span class="concept-count" id="conceptCount"></span>
+  </div>
+
+  <!-- Concept List -->
+  <div class="concept-list" id="conceptList"></div>
+
+  <!-- Export Panel -->
+  <div class="export-panel" id="exportPanel" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3>Export</h3>
+      <button class="btn btn-sm btn-primary" onclick="copyExport()">Copy</button>
+    </div>
+    <pre id="exportOutput"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let concepts = [];
+let activeFilter = 'all';
+let dragIndex = null;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function importJSON() {
+  const text = document.getElementById('jsonInput').value.trim();
+  if (!text) { showToast('Paste some JSON first'); return; }
+  try {
+    const data = JSON.parse(text);
+    if (!Array.isArray(data)) { showToast('Must be a JSON array'); return; }
+    concepts = data;
+    render();
+    showToast(`Imported ${concepts.length} concept(s)`);
+    document.getElementById('jsonInput').value = '';
+  } catch (e) {
+    showToast('Invalid JSON: ' + e.message);
+  }
+}
+
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) { showToast('File must contain a JSON array'); return; }
+      concepts = data;
+      render();
+      showToast(`Loaded ${concepts.length} concept(s) from file`);
+    } catch (err) {
+      showToast('Invalid JSON file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function loadSample() {
+  fetch('concepts.json')
+    .then(r => { if (!r.ok) throw new Error('Not found'); return r.json(); })
+    .then(data => {
+      concepts = data;
+      render();
+      showToast(`Loaded ${concepts.length} sample concept(s)`);
+    })
+    .catch(() => showToast('No concepts.json found on server'));
+}
+
+function clearAll() {
+  if (concepts.length === 0) return;
+  if (!confirm('Remove all concepts?')) return;
+  concepts = [];
+  render();
+  showToast('Cleared');
+}
+
+function exportJSON() {
+  if (concepts.length === 0) { showToast('No concepts to export'); return; }
+  const out = document.getElementById('exportOutput');
+  out.textContent = JSON.stringify(concepts, null, 2);
+  document.getElementById('exportPanel').style.display = 'block';
+  out.scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyExport() {
+  const text = document.getElementById('exportOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied')).catch(() => showToast('Copy failed'));
+}
+
+function render() {
+  const list = document.getElementById('conceptList');
+  const toolbar = document.getElementById('toolbar');
+  const count = document.getElementById('conceptCount');
+
+  if (concepts.length === 0) {
+    toolbar.style.display = 'none';
+    list.innerHTML = '<div class="empty-state"><h2>No concepts</h2><p>Paste JSON or load a file to get started</p></div>';
+    document.getElementById('exportPanel').style.display = 'none';
+    return;
+  }
+
+  toolbar.style.display = 'flex';
+
+  // Build type filters
+  const types = ['all', ...new Set(concepts.map(c => c.type))];
+  const filterGroup = document.getElementById('filterGroup');
+  filterGroup.innerHTML = types.map(t =>
+    `<button class="filter-btn ${t === activeFilter ? 'active' : ''}" onclick="setFilter('${t}')">${t}</button>`
+  ).join('');
+
+  const filtered = activeFilter === 'all' ? concepts : concepts.filter(c => c.type === activeFilter);
+  count.textContent = `${filtered.length} / ${concepts.length} concept(s)`;
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state"><p>No concepts match this filter</p></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((c, i) => {
+    const realIndex = concepts.indexOf(c);
+    const typeClass = 'type-' + (c.type || 'observation');
+    const desc = c.description || '';
+    const body = c.short || c.medium || c.long || '';
+    return `
+      <div class="concept-card" draggable="true" data-index="${realIndex}"
+           ondragstart="onDragStart(event, ${realIndex})"
+           ondragover="onDragOver(event, ${realIndex})"
+           ondragend="onDragEnd(event)"
+           ondrop="onDrop(event, ${realIndex})">
+        <div class="concept-card-actions">
+          <button class="btn btn-sm btn-danger" onclick="deleteConcept(${realIndex})" title="Delete">✕</button>
+        </div>
+        <div class="concept-card-header">
+          <span class="concept-drag-handle">⠿</span>
+          <span class="concept-type ${typeClass}">${c.type || 'unknown'}</span>
+          <span class="concept-description">${escHtml(desc)}</span>
+        </div>
+        <div class="concept-card-body" onclick="this.classList.toggle('expanded')">${escHtml(body)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setFilter(type) {
+  activeFilter = type;
+  render();
+}
+
+function deleteConcept(index) {
+  concepts.splice(index, 1);
+  render();
+  showToast('Concept deleted');
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* Drag and drop */
+function onDragStart(e, index) {
+  dragIndex = index;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', index);
+  setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+
+function onDragOver(e, index) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // Remove drag-over from all
+  document.querySelectorAll('.concept-card').forEach(el => el.classList.remove('drag-over'));
+  if (dragIndex !== index) {
+    e.currentTarget.classList.add('drag-over');
+  }
+}
+
+function onDragEnd(e) {
+  document.querySelectorAll('.concept-card').forEach(el => el.classList.remove('dragging', 'drag-over'));
+  dragIndex = null;
+}
+
+function onDrop(e, targetIndex) {
+  e.preventDefault();
+  document.querySelectorAll('.concept-card').forEach(el => el.classList.remove('drag-over'));
+  if (dragIndex === null || dragIndex === targetIndex) return;
+  // Move the concept
+  const [moved] = concepts.splice(dragIndex, 1);
+  concepts.splice(targetIndex, 0, moved);
+  dragIndex = null;
+  render();
+  showToast('Reordered');
+}
+
+// Allow paste into textarea via keyboard
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('jsonInput').addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') importJSON();
+  });
+});
+</script>
+</body>
+</html>

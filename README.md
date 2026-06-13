@@ -30,6 +30,8 @@ Example:
 
 | File               | Purpose                                             |
 | ------------------ | --------------------------------------------------- |
+| `index.html`       | Web interface — drag-and-drop concept management    |
+| `server.py`        | HTTP server serving the UI + API to concepts.json   |
 | `concept.py`       | CLI for listing and filtering concepts (Typer)      |
 | `concept_mcp.py`   | MCP server exposing concepts as a tool              |
 | `config.py`        | Shared llama.cpp model configuration                |
@@ -71,6 +73,19 @@ python concept.py concepts.json --type preference --format llm
 python concept.py concepts.json --scope medium
 ```
 
+### Web Interface — browse, drag-and-drop, import/export
+
+```bash
+python server.py
+```
+
+Open `http://localhost:8080` in a browser. The web UI lets you:
+- Paste concept JSON or load from file
+- Browse concepts with type filters
+- Drag-and-drop to reorder
+- Delete individual concepts
+- Export the full concept list back as JSON
+
 ### MCP Server — query concepts from any MCP host
 
 ```bash
@@ -81,13 +96,13 @@ Runs over stdin/stdout. Clients call `get_concept` with optional `type` and `des
 
 ### LLM Integration
 
-Use `instruct.txt` to prompt an LLM to summarize conversation topics as concept JSON. The output gets loaded into the web interface where concepts can be browsed and managed.
+Use `instruct.txt` to prompt an LLM to summarize conversation topics as concept JSON. Paste the output into the web interface or save it to `concepts.json`.
 
 ## Roadmap
 
 - [x] Concept CRUD CLI + MCP tool
 - [x] ChromaDB vector storage
-- [ ] Basic web interface for browsing and drag-and-drop concept management
+- [x] Basic web interface for browsing and drag-and-drop concept management
 - [ ] FUSE filesystem mount for the context window
 - [ ] Bidirectional sync — context ↔ filesystem
 
