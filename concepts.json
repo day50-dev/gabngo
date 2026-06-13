@@ -1,70 +1,15 @@
 [
-  {
-    "type": "constraint",
-    "description": "programming languages",
-    "short": "The programming language that we use is C",
-    "medium": "We use C17 standard and gcc-13 with a compile target of AMD64. Our build system is cmake"
-  },
-  {
-    "type": "preference",
-    "description": "programming style",
-    "short": "prefer single character variable names preceded with underscores",
-    "medium": "Write C using the K&R (1TBS) style, keeping opening braces on the same line as statements to maximize vertical density, while strictly employing snake_case for variables and functions and reserving SCREAMING_CASE solely for macros. Abandon ambiguous types like long in favor of precise <stdint.h> fixed-width types (e.g., uint32_t), and align your pointer syntax with the language grammar by attaching the asterisk to the variable name (char *ptr). To ensure safety and maintainability, never omit braces on single-line conditionals, and finally, delegate all these formatting decisions to an automated .clang-format configuration rather than debating them manually."
-  },
-  {
-    "type": "constraint",
-    "description": "The programming language that we use is C",
-    "short": "The programming language that we use is C",
-    "medium": "The programming language that we use is C",
-    "long": "The programming language that we use is C"
-  },
-  {
-    "type": "preference",
-    "description": "prefer single character variable names preceded wi",
-    "short": "prefer single character variable names preceded with underscores",
-    "medium": "prefer single character variable names preceded with underscores",
-    "long": "prefer single character variable names preceded with underscores"
-  },
-  {
-    "type": "constraint",
-    "description": "The programming language that we use is C",
-    "short": "The programming language that we use is C",
-    "medium": "The programming language that we use is C",
-    "long": "The programming language that we use is C"
-  },
-  {
-    "type": "preference",
-    "description": "prefer single character variable names preceded wi",
-    "short": "prefer single character variable names preceded with underscores",
-    "medium": "prefer single character variable names preceded with underscores",
-    "long": "prefer single character variable names preceded with underscores"
-  },
-  {
-    "type": "constraint",
-    "description": "The programming language that we use is C",
-    "short": "The programming language that we use is C",
-    "medium": "The programming language that we use is C",
-    "long": "The programming language that we use is C"
-  },
-  {
-    "type": "preference",
-    "description": "prefer single character variable names preceded wi",
-    "short": "prefer single character variable names preceded with underscores",
-    "medium": "prefer single character variable names preceded with underscores",
-    "long": "prefer single character variable names preceded with underscores"
-  },
-  {
-    "type": "constraint",
-    "description": "The programming language that we use is C",
-    "short": "The programming language that we use is C",
-    "medium": "The programming language that we use is C",
-    "long": "The programming language that we use is C"
-  },
-  {
-    "type": "preference",
-    "description": "prefer single character variable names preceded wi",
-    "short": "prefer single character variable names preceded with underscores",
-    "medium": "prefer single character variable names preceded with underscores",
-    "long": "prefer single character variable names preceded with underscores"
-  }
+    {
+	"type": "constraint",
+	"description": "programming languages",
+	"short": "The programming language that we use is C",
+	"medium": "We use C17 standard and gcc-13 with a compile target of AMD64. Our build system is cmake"
+    },
+    {
+        "type": "preference",
+        "description": "programming style",
+        "short": "prefer single character variable names preceded with underscores",
+	"medium": "Write C using the K&R (1TBS) style, keeping opening braces on the same line as statements to maximize vertical density, while strictly employing snake_case for variables and functions and reserving SCREAMING_CASE solely for macros. Abandon ambiguous types like long in favor of precise <stdint.h> fixed-width types (e.g., uint32_t), and align your pointer syntax with the language grammar by attaching the asterisk to the variable name (char *ptr). To ensure safety and maintainability, never omit braces on single-line conditionals, and finally, delegate all these formatting decisions to an automated .clang-format configuration rather than debating them manually."
+    }
+
 ]

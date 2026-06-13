@@ -16,6 +16,7 @@ class Concept(list):
         self.is_loaded = False
         self.db_all = None
         self.collection = client.get_or_create_collection("concepts")
+        self.path = path
 
     def __str__(self):
         return "\n".join(super().__iter__())
@@ -23,10 +24,11 @@ class Concept(list):
     def load(self, path = 'concepts.json'):
         with open(path, 'r') as f:
             self.db_all = json.load(f)
-            self.collection.upsert(
-                documents=[json.dumps(m) for m in self.db_all],
-                ids=[str(x) for x in range(0, len(self.db_all))]
-            )
+            if self.db_all:
+                self.collection.upsert(
+                    documents=[json.dumps(m) for m in self.db_all],
+                    ids=[str(x) for x in range(0, len(self.db_all))]
+                )
 
     def load_concept(self, klass = None, description = None):
         initial = {'role': 'system', 'content': ""}
@@ -131,14 +133,14 @@ class Concept(list):
             f.write("\n")
 
     def _load_concepts(self):
-        path = Path("concepts.json")
-        if path.exists():
-            with open(path) as f:
+        p = Path(self.path)
+        if p.exists():
+            with open(p) as f:
                 return json.load(f)
         return []
 
     def _save_concepts(self, data):
-        with open("concepts.json", "w") as f:
+        with open(self.path, "w") as f:
             json.dump(data, f, indent=2)
             f.write("\n")
 

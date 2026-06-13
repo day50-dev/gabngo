@@ -2,7 +2,7 @@
 
 Treat the LLM context window like a filesystem. Concepts (constraints, goals, preferences, observations, references) are files you `push` into context and `pull` back out.
 
-The context is just JSON — [llcat](llcat/) conversation files. Gab n' Go is the curated store; `push` injects concepts as system messages into those files, `pull` scans them and imports what it finds. No FUSE, no magic — just `cp`-style sync on JSON.
+The context is just JSON — [llcat](https://github.com/day50-dev/simple-llm-cli) conversation files. Gab n' Go is the curated store; `push` injects concepts as system messages into those files, `pull` scans them and imports what it finds. No FUSE, no magic — just `cp`-style sync on JSON.
 
 ## Concept Schema
 
@@ -39,6 +39,7 @@ Example:
 | `schema`           | Concept field constraints                           |
 | `instruct.txt`     | Prompt to get an LLM to output concept JSON         |
 | `tester.html`      | HTML drag-and-drop prototype for the concept window |
+| `pyproject.toml`   | Project metadata and build configuration           |
 | `requirements.txt` | Python dependencies                                 |
 
 ## Dependencies
@@ -58,13 +59,13 @@ pip install -r requirements.txt
 
 ```bash
 # List all concepts
-python concept.py
+python concept.py main concepts.json
 
 # Filter by type
-python concept.py concepts.json --type constraint
+python concept.py main concepts.json --type constraint
 
 # Print as an LLM prompt (inject into context window)
-python concept.py concepts.json --type preference --format llm
+python concept.py main concepts.json --type preference --format llm
 
 # Push concepts into an llcat conversation JSON (as system message)
 python concept.py push conversation.json
