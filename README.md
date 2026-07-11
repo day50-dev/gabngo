@@ -34,6 +34,7 @@ Example:
 | `server.py`        | HTTP server serving the UI + API to concepts.json   |
 | `concept.py`       | CLI for listing and filtering concepts (Typer)      |
 | `concept_mcp.py`   | MCP server exposing concepts as a tool              |
+| `cdir.py`          | CLI for listing agents and their context sessions   |
 | `config.py`        | Shared llama.cpp model configuration                |
 | `concepts.json`    | Sample concept data                                 |
 | `schema`           | Concept field constraints                           |
@@ -97,6 +98,29 @@ python concept_mcp.py
 ```
 
 Runs over stdin/stdout. Clients call `get_concept` with optional `type` and `description` to pull concepts into context.
+
+### cdir — ls for LLM context windows
+
+```bash
+# List all known agents
+python cdir.py
+
+# List sessions for a specific agent
+python cdir.py opencode/
+python cdir.py claude-code/
+python cdir.py codex/
+
+# Output as JSON
+python cdir.py opencode/ --json
+```
+
+cdir (context directory) is like DOS mtools but for LLM context windows. It lists agents and their conversation sessions, showing metadata like creation time, modification time, size, and message count.
+
+Supported agents:
+- **claude** — Claude Desktop (Anthropic)
+- **claude-code** — Claude Code CLI
+- **opencode** — opencode CLI
+- **codex** — OpenAI Codex CLI
 
 ### LLM Integration
 
