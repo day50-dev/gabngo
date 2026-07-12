@@ -110,6 +110,14 @@ python cdir.py opencode/
 python cdir.py claude-code/
 python cdir.py codex/
 
+# Sort by time (default) or size
+python cdir.py opencode/ -t
+python cdir.py opencode/ -s
+
+# Reverse sort order
+python cdir.py opencode/ -t -r
+python cdir.py opencode/ -s -r
+
 # Export a specific session as JSON (llcat conversation format)
 python cdir.py opencode/ses_0ac832e8effeeOjgyeQmTJIaZg
 ```
@@ -132,6 +140,7 @@ Use `instruct.txt` to prompt an LLM to summarize conversation topics as concept 
 - [x] ChromaDB vector storage
 - [x] Basic web interface for browsing and drag-and-drop concept management
 - [x] Push/pull sync — `push` concepts into llcat conversation JSON, `pull` them back
+- [x] cdir — list agents and export sessions from context windows
 - [ ] Web interface push/pull — push/pull from the browser
 
 ## Configuration
