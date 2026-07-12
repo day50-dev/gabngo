@@ -17,23 +17,20 @@ import sqlite3
 import fnmatch
 import typer
 from pathlib import Path
-from typing import List, Optional, Tuple
-from dataclasses import dataclass
+from typing import List, Optional, Tuple, Dict
 from rich.console import Console
+
+from lib import (
+    Match, Agent, AGENTS, Message,
+    get_formatter, JsonFormatter, XmlFormatter, MarkdownFormatter
+)
+
+# Re-export for backward compatibility
+__all__ = ['app', 'parse_path_pattern', 'get_sessions_for_pattern', 'grep_session', 
+           'get_opencode_session_content', 'get_claude_code_session_content', 'get_claude_session_content']
 
 app = typer.Typer()
 console = Console()
-
-
-@dataclass
-class Match:
-    """A single grep match."""
-    session_id: str
-    agent: str
-    line_num: int
-    line: str
-    context_before: List[str] = None
-    context_after: List[str] = None
 
 
 def get_opencode_session_content(agent_path: Path, session_id: str) -> List[Tuple[int, str]]:
@@ -142,10 +139,6 @@ CONTENT_EXTRACTORS = {
 }
 
 
-# Agent registry (same as cdir)
-from cdir import AGENTS
-
-
 def parse_path_pattern(pattern: str) -> List[Tuple[str, Optional[str]]]:
     """Parse path pattern like 'opencode/*' or 'opencode/ses_abc123'.
     
@@ -248,6 +241,7 @@ def main(
     after: int = typer.Option(0, "--after", "-A", help="Show N lines after match"),
     context: int = typer.Option(0, "--context", "-C", help="Show N lines before and after match"),
     ignore_case: bool = typer.Option(False, "--ignore-case", "-i", help="Ignore case"),
+    fmt: str = typer.Option("default", "--format", "-f", help="Output format: json, xml, md, or default"),
 ):
     """
     Search through agent session content.
@@ -273,6 +267,15 @@ def main(
         before = context
         after = context
     
+    # Get formatter if specified
+    formatter = None
+    if fmt != "default":
+        try:
+            formatter = get_formatter(fmt)
+        except ValueError as e:
+            console.print(f"[red]{e}[/red]")
+            raise typer.Exit(1)
+    
     # Parse path patterns
     path_list = parse_path_pattern(' '.join(paths))
     
@@ -297,40 +300,54 @@ def main(
     
     # Output based on flags
     if list_files:
-        for path in sorted(sessions_with_matches):
-            print(path)
+        files = sorted(sessions_with_matches)
+        if formatter:
+            print(formatter.format_match_files(files, has_matches=True))
+        else:
+            for path in files:
+                print(path)
     elif list_files_neg:
-        for path in sorted(sessions_without_matches):
-            print(path)
+        files = sorted(sessions_without_matches)
+        if formatter:
+            print(formatter.format_match_files(files, has_matches=False))
+        else:
+            for path in files:
+                print(path)
     elif count:
-        for path, cnt in sorted(session_counts.items()):
-            print(f"{path}:{cnt}")
+        if formatter:
+            print(formatter.format_match_counts(session_counts))
+        else:
+            for path, cnt in sorted(session_counts.items()):
+                print(f"{path}:{cnt}")
     else:
         # Print matches with context
-        current_session = None
-        for m in all_matches:
-            path = f"{m.agent}/{m.session_id}"
+        if formatter:
+            print(formatter.format_matches(all_matches))
+        else:
+            current_session = None
+            for m in all_matches:
+                path = f"{m.agent}/{m.session_id}"
+                
+                if path != current_session:
+                    if current_session is not None:
+                        print("--")
+                    current_session = path
+                
+                # Print context before
+                if m.context_before:
+                    for line in m.context_before:
+                        print(f"  {line}")
+                
+                # Print the matching line
+                print(f"{m.line_num}:{m.line}")
+                
+                # Print context after
+                if m.context_after:
+                    for line in m.context_after:
+                        print(f"  {line}")
             
-            if path != current_session:
-                if current_session is not None:
-                    print("--")
-                current_session = path
-            
-            # Print context before
-            if m.context_before:
-                for line in m.context_before:
-                    print(f"  {line}")
-            
-            # Print the matching line
-            print(f"{m.line_num}:{m.line}")
-            
-            # Print context after
-            if m.context_after:
-                for line in m.context_after:
-                    print(f"  {line}")
-        
-        if not all_matches:
-            console.print("[dim]No matches found[/dim]")
+            if not all_matches:
+                console.print("[dim]No matches found[/dim]")
 
 
 if __name__ == "__main__":

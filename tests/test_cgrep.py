@@ -290,3 +290,107 @@ def test_cli_invalid_pattern():
     result = runner.invoke(app, ["[invalid", "opencode/*"])
     assert result.exit_code == 1
     assert "Invalid pattern" in result.stdout
+
+
+# --- Format flag tests ---
+
+def test_cli_format_json_search(tmp_path):
+    """Test --format json for search results."""
+    create_test_opencode_db(tmp_path, "ses_test123")
+    
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "json", "python", f"opencode/ses_test123"])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert len(data) >= 2
+        assert data[0]['session'] == 'opencode/ses_test123'
+        assert 'line_num' in data[0]
+        assert 'line' in data[0]
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_xml_search(tmp_path):
+    """Test --format xml for search results."""
+    create_test_opencode_db(tmp_path, "ses_test123")
+    
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "xml", "python", f"opencode/ses_test123"])
+        assert result.exit_code == 0
+        assert '<?xml version="1.0"' in result.stdout
+        assert '<matches>' in result.stdout
+        assert '<session id="ses_test123"' in result.stdout
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_md_search(tmp_path):
+    """Test --format md for search results."""
+    create_test_opencode_db(tmp_path, "ses_test123")
+    
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "md", "python", f"opencode/ses_test123"])
+        assert result.exit_code == 0
+        assert '### opencode/ses_test123' in result.stdout
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_json_list_files(tmp_path):
+    """Test --format json with -l flag."""
+    create_test_opencode_db(tmp_path, "ses_test123")
+    
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "json", "-l", "python", f"opencode/ses_test123"])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert len(data) == 1
+        assert 'opencode/ses_test123' in data
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_json_count(tmp_path):
+    """Test --format json with -c flag."""
+    create_test_opencode_db(tmp_path, "ses_test123")
+    
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "json", "-c", "python", f"opencode/ses_test123"])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert 'opencode/ses_test123' in data
+        assert data['opencode/ses_test123'] >= 2
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_xml_list_files(tmp_path):
+    """Test --format xml with -l flag."""
+    create_test_opencode_db(tmp_path, "ses_test123")
+    
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "xml", "-l", "python", f"opencode/ses_test123"])
+        assert result.exit_code == 0
+        assert '<?xml version="1.0"' in result.stdout
+        assert '<files match="true">' in result.stdout
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_invalid():
+    """Test --format with invalid format."""
+    result = runner.invoke(app, ["--format", "csv", "python", "opencode/*"])
+    assert result.exit_code == 1
+    assert "Unknown format" in result.stdout

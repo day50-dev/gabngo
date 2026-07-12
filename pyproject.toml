@@ -1,0 +1,22 @@
+[project]
+name = "gabngo"
+version = "0.1.0"
+description = "Manage concepts for LLM context windows — push, pull, and browse"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Chris McKenzie", email = "kristopolous@yahoo.com" },
+]
+requires-python = ">=3.11"
+dependencies = [
+    "typer",
+    "rich",
+    "chromadb",
+    "mcp",
+]
+
+[project.scripts]
+gabngo = "concept:app"
+
+[tool.setuptools.packages.find]
+include = ["concept*"]

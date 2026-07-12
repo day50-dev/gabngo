@@ -349,3 +349,142 @@ def test_session_optional_fields():
     assert session.path is None
     assert session.model is None
     assert session.message_count is None
+
+
+# --- Format flag tests ---
+
+def test_cli_format_json_list_sessions(tmp_path):
+    """Test --format json for listing sessions."""
+    db_path = tmp_path / 'opencode.db'
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE session (
+            id TEXT PRIMARY KEY, project_id TEXT, parent_id TEXT, slug TEXT,
+            directory TEXT, title TEXT, version TEXT, share_url TEXT,
+            summary_additions INTEGER, summary_deletions INTEGER,
+            summary_files INTEGER, summary_diffs TEXT, revert TEXT,
+            permission TEXT, time_created INTEGER, time_updated INTEGER,
+            time_compacting INTEGER, time_archived INTEGER, workspace_id TEXT,
+            path TEXT, agent TEXT, model TEXT, cost REAL,
+            tokens_input INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER,
+            tokens_cache_read INTEGER, tokens_cache_write INTEGER, metadata TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE message (
+            id TEXT PRIMARY KEY, session_id TEXT, time_created INTEGER,
+            time_updated INTEGER, data TEXT
+        )
+    ''')
+    cursor.execute('''
+        INSERT INTO session (id, title, time_created, time_updated, tokens_input, tokens_output, directory)
+        VALUES ('ses_test123', 'Test Session', 1700000000000, 1700000060000, 100, 200, '/tmp')
+    ''')
+    conn.commit()
+    conn.close()
+    
+    from cdir import AGENTS
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "json", "opencode/"])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert len(data) == 1
+        assert data[0]['id'] == 'ses_test123'
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_xml_list_sessions(tmp_path):
+    """Test --format xml for listing sessions."""
+    db_path = tmp_path / 'opencode.db'
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE session (
+            id TEXT PRIMARY KEY, project_id TEXT, parent_id TEXT, slug TEXT,
+            directory TEXT, title TEXT, version TEXT, share_url TEXT,
+            summary_additions INTEGER, summary_deletions INTEGER,
+            summary_files INTEGER, summary_diffs TEXT, revert TEXT,
+            permission TEXT, time_created INTEGER, time_updated INTEGER,
+            time_compacting INTEGER, time_archived INTEGER, workspace_id TEXT,
+            path TEXT, agent TEXT, model TEXT, cost REAL,
+            tokens_input INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER,
+            tokens_cache_read INTEGER, tokens_cache_write INTEGER, metadata TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE message (
+            id TEXT PRIMARY KEY, session_id TEXT, time_created INTEGER,
+            time_updated INTEGER, data TEXT
+        )
+    ''')
+    cursor.execute('''
+        INSERT INTO session (id, title, time_created, time_updated, tokens_input, tokens_output, directory)
+        VALUES ('ses_test123', 'Test Session', 1700000000000, 1700000060000, 100, 200, '/tmp')
+    ''')
+    conn.commit()
+    conn.close()
+    
+    from cdir import AGENTS
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "xml", "opencode/"])
+        assert result.exit_code == 0
+        assert '<?xml version="1.0"' in result.stdout
+        assert '<session id="ses_test123"' in result.stdout
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_md_list_sessions(tmp_path):
+    """Test --format md for listing sessions."""
+    db_path = tmp_path / 'opencode.db'
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE session (
+            id TEXT PRIMARY KEY, project_id TEXT, parent_id TEXT, slug TEXT,
+            directory TEXT, title TEXT, version TEXT, share_url TEXT,
+            summary_additions INTEGER, summary_deletions INTEGER,
+            summary_files INTEGER, summary_diffs TEXT, revert TEXT,
+            permission TEXT, time_created INTEGER, time_updated INTEGER,
+            time_compacting INTEGER, time_archived INTEGER, workspace_id TEXT,
+            path TEXT, agent TEXT, model TEXT, cost REAL,
+            tokens_input INTEGER, tokens_output INTEGER, tokens_reasoning INTEGER,
+            tokens_cache_read INTEGER, tokens_cache_write INTEGER, metadata TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE message (
+            id TEXT PRIMARY KEY, session_id TEXT, time_created INTEGER,
+            time_updated INTEGER, data TEXT
+        )
+    ''')
+    cursor.execute('''
+        INSERT INTO session (id, title, time_created, time_updated, tokens_input, tokens_output, directory)
+        VALUES ('ses_test123', 'Test Session', 1700000000000, 1700000060000, 100, 200, '/tmp')
+    ''')
+    conn.commit()
+    conn.close()
+    
+    from cdir import AGENTS
+    original = AGENTS['opencode'].base_path
+    AGENTS['opencode'].base_path = tmp_path
+    try:
+        result = runner.invoke(app, ["--format", "md", "opencode/"])
+        assert result.exit_code == 0
+        assert '# Sessions' in result.stdout
+        assert '| ID | Name |' in result.stdout
+    finally:
+        AGENTS['opencode'].base_path = original
+
+
+def test_cli_format_invalid():
+    """Test --format with invalid format."""
+    result = runner.invoke(app, ["--format", "csv", "opencode/"])
+    assert result.exit_code == 1
+    assert "Unknown format" in result.stdout
