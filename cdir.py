@@ -438,13 +438,48 @@ EXPORTERS = {
 }
 
 
+def _print_sessions(sessions, agent_name, by_time, by_size, reverse):
+    """Print sessions in aligned columns. agent_name shown if provided."""
+    if not sessions:
+        console.print(f"[yellow]No sessions found[/yellow]")
+        return
+    
+    if by_time:
+        sessions.sort(key=lambda s: s.mtime or s.ctime or datetime.min, reverse=not reverse)
+    elif by_size:
+        sessions.sort(key=lambda s: s.size, reverse=not reverse)
+    else:
+        sessions.sort(key=lambda s: s.mtime or s.ctime or datetime.min, reverse=not reverse)
+    
+    rows = []
+    for s in sessions:
+        ctime = format_datetime(s.ctime)
+        mtime = format_datetime(s.mtime)
+        size = format_size(s.size)
+        msgs = str(s.message_count) if s.message_count else "-"
+        rows.append((s.id, s.name, ctime, mtime, size, msgs))
+    
+    w_id = max(len(r[0]) for r in rows)
+    w_name = max(len(r[1]) for r in rows)
+    w_ctime = max(len(r[2]) for r in rows)
+    w_mtime = max(len(r[3]) for r in rows)
+    w_size = max(len(r[4]) for r in rows)
+    w_msgs = max(len(r[5]) for r in rows)
+    
+    for id, name, ctime, mtime, size, msgs in rows:
+        print(f"  {id:<{w_id}}  {name:<{w_name}}  {ctime:<{w_ctime}}  {mtime:<{w_mtime}}  {size:>{w_size}}  {msgs:>{w_msgs}}")
+    
+    print(f"\n  {len(rows)} session(s)")
+
+
 @app.command()
 def main(
     path: Optional[str] = typer.Argument(None, help="Agent or agent/session_id"),
     agents: bool = typer.Option(False, "--agents", "-a", help="List supported agents"),
     by_time: bool = typer.Option(False, "--time", "-t", help="Sort by modification time"),
     by_size: bool = typer.Option(False, "--size", "-s", help="Sort by size"),
-    reverse: bool = typer.Option(False, "--reverse", "-r", help="Reverse sort order")
+    reverse: bool = typer.Option(False, "--reverse", "-r", help="Reverse sort order"),
+    recursive: bool = typer.Option(False, "--recursive", "-R", help="Show agent name, recurse all agents if no path given")
 ):
     """
     List agents and their conversation sessions.
@@ -452,6 +487,7 @@ def main(
     With --agents, lists all known agents.
     With an agent name, lists sessions for that agent.
     With agent/session_id, exports that session.
+    With -R, shows agent name and recurse all agents if no path given.
     """
     if agents:
         # List all agents with aligned columns
@@ -510,22 +546,34 @@ def main(
                 console.print(f"[yellow]No sessions found for {agent_name}[/yellow]")
                 return
             
-            # Sort sessions
-            if by_time:
-                sessions.sort(key=lambda s: s.mtime or s.ctime or datetime.min, reverse=not reverse)
-            elif by_size:
-                sessions.sort(key=lambda s: s.size, reverse=not reverse)
-            else:
-                # Default: sort by mtime descending (most recent first)
-                sessions.sort(key=lambda s: s.mtime or s.ctime or datetime.min, reverse=not reverse)
+            _print_sessions(sessions, agent_name if recursive else None, by_time, by_size, reverse)
+    else:
+        if recursive:
+            # List all agents' sessions with agent name prefix
+            all_sessions = []
+            for name, agent_info in AGENTS.items():
+                if not agent_info.base_path.exists():
+                    continue
+                extractor = SESSION_EXTRACTORS.get(name)
+                if not extractor:
+                    continue
+                for s in extractor(agent_info):
+                    all_sessions.append((name, s))
+            
+            if not all_sessions:
+                console.print("[yellow]No sessions found[/yellow]")
+                return
+            
+            # Sort by mtime
+            all_sessions.sort(key=lambda x: x[1].mtime or x[1].ctime or datetime.min, reverse=not reverse)
             
             rows = []
-            for s in sessions:
+            for agent_name, s in all_sessions:
                 ctime = format_datetime(s.ctime)
                 mtime = format_datetime(s.mtime)
                 size = format_size(s.size)
                 msgs = str(s.message_count) if s.message_count else "-"
-                rows.append((s.id, s.name, ctime, mtime, size, msgs))
+                rows.append((f"{agent_name}/{s.id}", s.name, ctime, mtime, size, msgs))
             
             w_id = max(len(r[0]) for r in rows)
             w_name = max(len(r[1]) for r in rows)
@@ -538,10 +586,10 @@ def main(
                 print(f"  {id:<{w_id}}  {name:<{w_name}}  {ctime:<{w_ctime}}  {mtime:<{w_mtime}}  {size:>{w_size}}  {msgs:>{w_msgs}}")
             
             print(f"\n  {len(rows)} session(s)")
-    else:
-        # No arguments provided, show help
-        console.print("[dim]Usage: cdir --agents | cdir <agent>/ | cdir <agent>/<session_id>[/dim]")
-        console.print("[dim]Run 'cdir --help' for more information[/dim]")
+        else:
+            # No arguments provided, show help
+            console.print("[dim]Usage: cdir --agents | cdir <agent>/ | cdir <agent>/<session_id> | cdir -R[/dim]")
+            console.print("[dim]Run 'cdir --help' for more information[/dim]")
 
 
 if __name__ == "__main__":
