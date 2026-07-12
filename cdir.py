@@ -345,39 +345,132 @@ def format_datetime(dt: Optional[datetime]) -> str:
     return dt.strftime("%Y-%m-%d %H:%M")
 
 
+def export_opencode_session(agent_info: Agent, session_id: str) -> list:
+    """Export an opencode session as llcat-format conversation JSON."""
+    db_path = agent_info.base_path / 'opencode.db'
+    if not db_path.exists():
+        return []
+    
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    
+    # Get messages for this session, ordered by time
+    cursor.execute('''
+        SELECT m.id, m.data, m.time_created
+        FROM message m
+        WHERE m.session_id = ?
+        ORDER BY m.time_created
+    ''', (session_id,))
+    
+    messages = []
+    for msg_id, msg_data, time_created in cursor.fetchall():
+        data = json.loads(msg_data)
+        role = data.get('role', 'user')
+        
+        # Get parts for this message
+        cursor.execute('''
+            SELECT data FROM part
+            WHERE message_id = ?
+            ORDER BY time_created
+        ''', (msg_id,))
+        
+        content_parts = []
+        for (part_data,) in cursor.fetchall():
+            part = json.loads(part_data)
+            if part.get('type') == 'text':
+                content_parts.append(part.get('text', ''))
+        
+        content = '\n'.join(content_parts) if content_parts else ''
+        
+        if role in ('user', 'assistant') and content:
+            messages.append({'role': role, 'content': content})
+    
+    conn.close()
+    return messages
+
+
+def export_claude_code_session(agent_info: Agent, session_id: str) -> list:
+    """Export a claude-code session as llcat-format conversation JSON."""
+    # Find the JSONL file for this session
+    for session_file in agent_info.base_path.glob(agent_info.session_pattern):
+        if session_file.stem == session_id:
+            messages = []
+            with open(session_file, 'r') as f:
+                for line in f:
+                    try:
+                        data = json.loads(line)
+                        msg_type = data.get('type', '')
+                        if msg_type == 'human':
+                            content = data.get('message', {}).get('content', '')
+                            if content:
+                                messages.append({'role': 'user', 'content': content})
+                        elif msg_type == 'assistant':
+                            content = data.get('message', {}).get('content', '')
+                            if content:
+                                messages.append({'role': 'assistant', 'content': content})
+                    except json.JSONDecodeError:
+                        continue
+            return messages
+    return []
+
+
+def export_claude_session(agent_info: Agent, session_id: str) -> list:
+    """Export a claude-desktop session as llcat-format conversation JSON."""
+    for session_file in agent_info.base_path.glob(agent_info.session_pattern):
+        if session_file.stem == session_id:
+            try:
+                with open(session_file, 'r') as f:
+                    data = json.load(f)
+                # Claude Desktop stores messages directly
+                if isinstance(data, list):
+                    return data
+                elif isinstance(data, dict) and 'messages' in data:
+                    return data['messages']
+            except (json.JSONDecodeError, KeyError):
+                pass
+    return []
+
+
+EXPORTERS = {
+    'opencode': export_opencode_session,
+    'claude-code': export_claude_code_session,
+    'claude': export_claude_session,
+}
+
+
 @app.command()
 def main(
-    agent: Optional[str] = typer.Argument(None, help="Agent name (e.g., claude, opencode, codex)"),
-    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON")
+    path: Optional[str] = typer.Argument(None, help="Agent or agent/session_id"),
+    agents: bool = typer.Option(False, "--agents", "-a", help="List supported agents"),
+    by_time: bool = typer.Option(False, "--time", "-t", help="Sort by modification time"),
+    by_size: bool = typer.Option(False, "--size", "-s", help="Sort by size"),
+    reverse: bool = typer.Option(False, "--reverse", "-r", help="Reverse sort order")
 ):
     """
     List agents and their conversation sessions.
     
-    Without arguments, lists all known agents.
+    With --agents, lists all known agents.
     With an agent name, lists sessions for that agent.
+    With agent/session_id, exports that session.
     """
-    if agent is None:
-        # List all agents
-        table = Table(title="Available Agents", box=box.ROUNDED)
-        table.add_column("Agent", style="cyan")
-        table.add_column("Description", style="white")
-        table.add_column("Storage", style="dim")
-        table.add_column("Format", style="green")
-        
+    if agents:
+        # List all agents with aligned columns
+        rows = []
         for name, agent_info in AGENTS.items():
-            exists = "✓" if agent_info.base_path.exists() else "✗"
-            table.add_row(
-                f"{name} {exists}",
-                agent_info.description,
-                str(agent_info.base_path),
-                agent_info.storage_format
-            )
+            exists = "+" if agent_info.base_path.exists() else "-"
+            rows.append((exists, name, agent_info.description, str(agent_info.base_path), agent_info.storage_format))
         
-        console.print(table)
-        console.print("\n[dim]Use 'cdir <agent>/' to list sessions[/dim]")
-    else:
-        # Strip trailing slash if present
-        agent_name = agent.rstrip('/')
+        w_name = max(len(r[1]) for r in rows)
+        w_desc = max(len(r[2]) for r in rows)
+        w_path = max(len(r[3]) for r in rows)
+        
+        for exists, name, desc, path, fmt in rows:
+            print(f"  {exists} {name:<{w_name}}  {desc:<{w_desc}}  {path:<{w_path}}  [{fmt}]")
+    elif path is not None:
+        # Parse agent/session_id format
+        parts = path.strip('/').split('/', 1)
+        agent_name = parts[0]
+        session_id = parts[1] if len(parts) > 1 else None
         
         if agent_name not in AGENTS:
             console.print(f"[red]Unknown agent: {agent_name}[/red]")
@@ -391,55 +484,63 @@ def main(
             console.print(f"[dim]Is {agent_name} installed?[/dim]")
             raise typer.Exit(1)
         
-        # Get sessions for this agent
-        extractor = SESSION_EXTRACTORS.get(agent_name)
-        if not extractor:
-            console.print(f"[red]No session extractor for {agent_name}[/red]")
-            raise typer.Exit(1)
-        
-        sessions = extractor(agent_info)
-        
-        if json_output:
-            # JSON output
-            output = []
-            for s in sessions:
-                output.append({
-                    'id': s.id,
-                    'name': s.name,
-                    'ctime': s.ctime.isoformat() if s.ctime else None,
-                    'mtime': s.mtime.isoformat() if s.mtime else None,
-                    'size': s.size,
-                    'path': s.path,
-                    'model': s.model,
-                    'message_count': s.message_count
-                })
-            print(json.dumps(output, indent=2))
+        if session_id:
+            # Export specific session
+            exporter = EXPORTERS.get(agent_name)
+            if not exporter:
+                console.print(f"[red]No exporter for {agent_name}[/red]")
+                raise typer.Exit(1)
+            
+            messages = exporter(agent_info, session_id)
+            if not messages:
+                console.print(f"[yellow]Session not found: {session_id}[/yellow]")
+                raise typer.Exit(1)
+            
+            print(json.dumps(messages, indent=2))
         else:
-            # Table output
+            # List sessions for agent
+            extractor = SESSION_EXTRACTORS.get(agent_name)
+            if not extractor:
+                console.print(f"[red]No session extractor for {agent_name}[/red]")
+                raise typer.Exit(1)
+            
+            sessions = extractor(agent_info)
+            
             if not sessions:
                 console.print(f"[yellow]No sessions found for {agent_name}[/yellow]")
                 return
             
-            table = Table(title=f"{agent_info.description} Sessions", box=box.ROUNDED)
-            table.add_column("ID", style="cyan", no_wrap=True)
-            table.add_column("Name", style="white")
-            table.add_column("Created", style="dim")
-            table.add_column("Modified", style="dim")
-            table.add_column("Size", style="green", justify="right")
-            table.add_column("Messages", style="magenta", justify="right")
+            # Sort sessions
+            if by_time:
+                sessions.sort(key=lambda s: s.mtime or s.ctime or datetime.min, reverse=not reverse)
+            elif by_size:
+                sessions.sort(key=lambda s: s.size, reverse=not reverse)
+            else:
+                # Default: sort by mtime descending (most recent first)
+                sessions.sort(key=lambda s: s.mtime or s.ctime or datetime.min, reverse=not reverse)
             
+            rows = []
             for s in sessions:
-                table.add_row(
-                    s.id[:12] + "..." if len(s.id) > 12 else s.id,
-                    s.name[:40] + "..." if len(s.name) > 40 else s.name,
-                    format_datetime(s.ctime),
-                    format_datetime(s.mtime),
-                    format_size(s.size),
-                    str(s.message_count) if s.message_count else "N/A"
-                )
+                ctime = format_datetime(s.ctime)
+                mtime = format_datetime(s.mtime)
+                size = format_size(s.size)
+                msgs = str(s.message_count) if s.message_count else "-"
+                rows.append((s.id, s.name, ctime, mtime, size, msgs))
             
-            console.print(table)
-            console.print(f"\n[dim]{len(sessions)} session(s) found[/dim]")
+            w_id = max(len(r[0]) for r in rows)
+            w_name = max(len(r[1]) for r in rows)
+            w_ctime = max(len(r[2]) for r in rows)
+            w_mtime = max(len(r[3]) for r in rows)
+            w_size = max(len(r[4]) for r in rows)
+            
+            for id, name, ctime, mtime, size, msgs in rows:
+                print(f"  {id:<{w_id}}  {name:<{w_name}}  {ctime:<{w_ctime}}  {mtime:<{w_mtime}}  {size:>{w_size}}  msgs={msgs}")
+            
+            print(f"\n  {len(rows)} session(s)")
+    else:
+        # No arguments provided, show help
+        console.print("[dim]Usage: cdir --agents | cdir <agent>/ | cdir <agent>/<session_id>[/dim]")
+        console.print("[dim]Run 'cdir --help' for more information[/dim]")
 
 
 if __name__ == "__main__":

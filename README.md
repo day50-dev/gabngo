@@ -103,18 +103,18 @@ Runs over stdin/stdout. Clients call `get_concept` with optional `type` and `des
 
 ```bash
 # List all known agents
-python cdir.py
+python cdir.py --agents
 
 # List sessions for a specific agent
 python cdir.py opencode/
 python cdir.py claude-code/
 python cdir.py codex/
 
-# Output as JSON
-python cdir.py opencode/ --json
+# Export a specific session as JSON (llcat conversation format)
+python cdir.py opencode/ses_0ac832e8effeeOjgyeQmTJIaZg
 ```
 
-cdir (context directory) is like DOS mtools but for LLM context windows. It lists agents and their conversation sessions, showing metadata like creation time, modification time, size, and message count.
+cdir (context directory) is like DOS mtools but for LLM context windows. It lists agents and their conversation sessions, showing metadata like creation time, modification time, size, and message count. You can also export individual sessions as JSON in the llcat conversation format.
 
 Supported agents:
 - **claude** — Claude Desktop (Anthropic)
