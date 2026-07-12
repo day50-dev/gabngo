@@ -532,9 +532,10 @@ def main(
             w_ctime = max(len(r[2]) for r in rows)
             w_mtime = max(len(r[3]) for r in rows)
             w_size = max(len(r[4]) for r in rows)
+            w_msgs = max(len(r[5]) for r in rows)
             
             for id, name, ctime, mtime, size, msgs in rows:
-                print(f"  {id:<{w_id}}  {name:<{w_name}}  {ctime:<{w_ctime}}  {mtime:<{w_mtime}}  {size:>{w_size}}  msgs={msgs}")
+                print(f"  {id:<{w_id}}  {name:<{w_name}}  {ctime:<{w_ctime}}  {mtime:<{w_mtime}}  {size:>{w_size}}  {msgs:>{w_msgs}}")
             
             print(f"\n  {len(rows)} session(s)")
     else:
