@@ -3,8 +3,8 @@ import sqlite3
 import pytest
 from pathlib import Path
 from typer.testing import CliRunner
-from cgrep import app, parse_path_pattern, get_sessions_for_pattern, grep_session, get_opencode_session_content
-from cdir import AGENTS
+from ctools.cgrep import app, parse_path_pattern, get_sessions_for_pattern, grep_session, get_opencode_session_content
+from ctools.cdir import AGENTS
 
 runner = CliRunner()
 

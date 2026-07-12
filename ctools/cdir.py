@@ -22,7 +22,7 @@ from datetime import datetime
 from typing import List, Optional
 from rich.console import Console
 
-from lib import (
+from ctools.lib import (
     Session, Agent, AGENTS, Message,
     get_formatter, format_size, format_datetime,
     JsonFormatter, XmlFormatter, MarkdownFormatter

@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 from typer.testing import CliRunner
 from datetime import datetime
-from cdir import app, Agent, Session, AGENTS, get_opencode_sessions, get_claude_code_sessions
+from ctools.cdir import app, Agent, Session, AGENTS, get_opencode_sessions, get_claude_code_sessions
 
 runner = CliRunner()
 
@@ -384,7 +384,7 @@ def test_cli_format_json_list_sessions(tmp_path):
     conn.commit()
     conn.close()
     
-    from cdir import AGENTS
+    from ctools.cdir import AGENTS
     original = AGENTS['opencode'].base_path
     AGENTS['opencode'].base_path = tmp_path
     try:
@@ -428,7 +428,7 @@ def test_cli_format_xml_list_sessions(tmp_path):
     conn.commit()
     conn.close()
     
-    from cdir import AGENTS
+    from ctools.cdir import AGENTS
     original = AGENTS['opencode'].base_path
     AGENTS['opencode'].base_path = tmp_path
     try:
@@ -471,7 +471,7 @@ def test_cli_format_md_list_sessions(tmp_path):
     conn.commit()
     conn.close()
     
-    from cdir import AGENTS
+    from ctools.cdir import AGENTS
     original = AGENTS['opencode'].base_path
     AGENTS['opencode'].base_path = tmp_path
     try:

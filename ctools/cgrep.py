@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Dict
 from rich.console import Console
 
-from lib import (
+from ctools.lib import (
     Match, Agent, AGENTS, Message,
     get_formatter, JsonFormatter, XmlFormatter, MarkdownFormatter
 )
@@ -164,7 +164,7 @@ def parse_path_pattern(pattern: str) -> List[Tuple[str, Optional[str]]]:
 
 def get_sessions_for_pattern(agent_name: str, session_pat: str) -> List[str]:
     """Get session IDs matching a pattern for an agent."""
-    from cdir import SESSION_EXTRACTORS
+    from ctools.cdir import SESSION_EXTRACTORS
     
     agent_info = AGENTS.get(agent_name)
     if not agent_info or not agent_info.base_path.exists():
