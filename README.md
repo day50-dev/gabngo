@@ -2,7 +2,7 @@
 
 Treat the LLM context window like a filesystem. Concepts (constraints, goals, preferences, observations, references) are files you `push` into context and `pull` back out.
 
-The context is just JSON — [llcat](https://github.com/day50-dev/simple-llm-cli) conversation files. Gab n' Go is the curated store; `push` injects concepts as system messages into those files, `pull` scans them and imports what it finds. No FUSE, no magic — just `cp`-style sync on JSON.
+The context is just JSON. Gab n' Go is the curated store; `push` injects concepts as system messages into those files, `pull` scans them and imports what it finds. No FUSE, no magic — just `cp`-style sync on JSON.
 
 ## Concept Schema
 
@@ -98,31 +98,6 @@ python concept_mcp.py
 ```
 
 Runs over stdin/stdout. Clients call `get_concept` with optional `type` and `description` to pull concepts into context.
-
-### cdir — ls for LLM context windows
-
-```bash
-# List all known agents
-python cdir.py --agents
-
-# List sessions for a specific agent
-python cdir.py opencode/
-python cdir.py claude-code/
-python cdir.py codex/
-
-# Sort by time (default) or size
-python cdir.py opencode/ -t
-python cdir.py opencode/ -s
-
-# Reverse sort order
-python cdir.py opencode/ -t -r
-python cdir.py opencode/ -s -r
-
-# Export a specific session as JSON (llcat conversation format)
-python cdir.py opencode/ses_0ac832e8effeeOjgyeQmTJIaZg
-```
-
-cdir (context directory) is like DOS mtools but for LLM context windows. It lists agents and their conversation sessions, showing metadata like creation time, modification time, size, and message count. You can also export individual sessions as JSON in the llcat conversation format.
 
 ### LLM Integration
 
