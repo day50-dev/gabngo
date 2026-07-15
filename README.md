@@ -35,7 +35,6 @@ Example:
 | `concept.py`       | CLI for listing and filtering concepts (Typer)      |
 | `concept_mcp.py`   | MCP server exposing concepts as a tool              |
 | `cdir.py`          | CLI for listing agents and their context sessions   |
-| `cgrep.py`         | CLI for searching sessions with PCRE patterns     |
 | `config.py`        | Shared llama.cpp model configuration                |
 | `concepts.json`    | Sample concept data                                 |
 | `schema`           | Concept field constraints                           |
@@ -125,58 +124,9 @@ python cdir.py opencode/ses_0ac832e8effeeOjgyeQmTJIaZg
 
 cdir (context directory) is like DOS mtools but for LLM context windows. It lists agents and their conversation sessions, showing metadata like creation time, modification time, size, and message count. You can also export individual sessions as JSON in the llcat conversation format.
 
-### cgrep — grep for LLM context windows
-
-```bash
-# Search for pattern in all sessions
-python cgrep.py "import os" opencode/
-
-# List files containing pattern (case-insensitive)
-python cgrep.py -l -i "error" claude-code/
-
-# Count matches per session
-python cgrep.py -c "def " opencode/
-
-# Invert match (exclude pattern)
-python cgrep.py -v "test" opencode/
-
-# Show context lines around matches
-python cgrep.py -C 2 "exception" claude-code/
-
-# Search multiple agents
-python cgrep.py "TODO" opencode/ claude-code/
-```
-
-cgrep searches conversation content across agents. It reads the actual session data from each agent's storage format and applies PCRE regex patterns.
-
-Flags:
-- `-l` / `-L` — list files with/without matches
-- `-c` — count matches per file
-- `-v` — invert match
-- `-i` — case-insensitive
-- `-A N` — show N lines after match
-- `-B N` — show N lines before match
-- `-C N` — show N lines before and after
-
-Supported agents:
-- **claude** — Claude Desktop (Anthropic)
-- **claude-code** — Claude Code CLI
-- **opencode** — opencode CLI
-- **codex** — OpenAI Codex CLI
-
 ### LLM Integration
 
 Use `instruct.txt` to prompt an LLM to summarize conversation topics as concept JSON. Paste the output into the web interface or save it to `concepts.json`.
-
-## Roadmap
-
-- [x] Concept CRUD CLI + MCP tool
-- [x] ChromaDB vector storage
-- [x] Basic web interface for browsing and drag-and-drop concept management
-- [x] Push/pull sync — `push` concepts into llcat conversation JSON, `pull` them back
-- [x] cdir — list agents and export sessions from context windows
-- [x] cgrep — search sessions with PCRE patterns
-- [ ] Web interface push/pull — push/pull from the browser
 
 ## Configuration
 
